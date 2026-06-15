@@ -9,6 +9,7 @@ import FeedbackModal from '@/components/Duel/FeedbackModal';
 import ParchmentCard from '@/components/shared/ParchmentCard';
 import SocratesDeathEasterEgg from '@/components/Duel/SocratesDeathEasterEgg';
 import BadgeUnlockModal from '@/components/Duel/BadgeUnlockModal';
+import EternalRecurrenceDice from '@/components/Duel/EternalRecurrenceDice';
 import { getPhilosopherById } from '@/data/philosophers';
 import { useGameStore } from '@/store/useGameStore';
 import { getQuestionsByPhilosopher } from '@/data/questions';
@@ -30,6 +31,8 @@ export default function Duel() {
     showEasterEgg,
     showBadgeUnlock,
     newlyUnlockedBadge,
+    dice,
+    ubermenschWill,
     setCurrentPhilosopher,
     loadNextQuestion,
     answerQuestion,
@@ -43,6 +46,7 @@ export default function Duel() {
     setNewlyUnlockedBadge,
     setCurrentFollowUpQuestion,
     proceedAfterFeedback,
+    rerollDice,
   } = useGameStore();
 
   const philosopher = getPhilosopherById(philosopherId || '');
@@ -320,6 +324,19 @@ export default function Duel() {
 
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-6">
           <div className="max-w-4xl w-full space-y-8">
+            {philosopherIdTyped === 'nietzsche' && !currentFollowUpQuestion && (
+              <div className="flex justify-center">
+                <EternalRecurrenceDice
+                  result={dice.result}
+                  isRolling={dice.isRolling}
+                  hasRerolled={dice.hasRerolled}
+                  ubermenschWill={ubermenschWill}
+                  onReroll={() => rerollDice(philosopherIdTyped)}
+                  disabled={hasAnswered}
+                />
+              </div>
+            )}
+
             {activeQuestion && (
               <SceneCard
                 question={activeQuestion}
@@ -353,14 +370,14 @@ export default function Duel() {
             <div className="flex justify-center">
               <button
                 onClick={handleConfirm}
-                disabled={!selectedOption || hasAnswered}
+                disabled={!selectedOption || hasAnswered || (philosopherIdTyped === 'nietzsche' && dice.isRolling)}
                 className={`btn-gold text-lg px-12 ${
-                  !selectedOption || hasAnswered
+                  !selectedOption || hasAnswered || (philosopherIdTyped === 'nietzsche' && dice.isRolling)
                     ? 'opacity-50 cursor-not-allowed'
                     : 'animate-glow'
                 }`}
               >
-                确认选择
+                {philosopherIdTyped === 'nietzsche' && dice.isRolling ? '命运之骰滚动中...' : '确认选择'}
               </button>
             </div>
           </div>

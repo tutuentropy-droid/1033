@@ -1,8 +1,8 @@
-import { X, CheckCircle, XCircle, ArrowRight, Home, Info, Award, Sparkles, Link, Link2Off, Trophy } from 'lucide-react';
+import { X, CheckCircle, XCircle, ArrowRight, Home, Info, Award, Sparkles, Link, Link2Off, Trophy, Dices, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ParchmentCard from '@/components/shared/ParchmentCard';
 import TypewriterText from '@/components/shared/TypewriterText';
-import type { FeedbackState, Philosopher, Question, FollowUpQuestion, Badge, EasterEgg } from '@/types';
+import type { FeedbackState, Philosopher, Question, FollowUpQuestion, Badge, EasterEgg, DiceResult } from '@/types';
 
 interface FeedbackModalProps {
   feedback: FeedbackState;
@@ -19,6 +19,55 @@ const getRarityLabel = (rarity: Badge['rarity']) => {
     case 'legendary': return { text: '传说', color: 'text-orange-500', bg: 'bg-gradient-to-r from-yellow-100 to-orange-100 border-orange-300' };
     case 'rare': return { text: '稀有', color: 'text-purple-500', bg: 'bg-gradient-to-r from-purple-100 to-indigo-100 border-purple-300' };
     default: return { text: '普通', color: 'text-gray-500', bg: 'bg-gray-100 border-gray-300' };
+  }
+};
+
+const diceFaces: Record<DiceResult, string> = {
+  1: '⚀',
+  2: '⚁',
+  3: '⚂',
+  4: '⚃',
+  5: '⚄',
+  6: '⚅',
+};
+
+const getDiceToneStyle = (tone: string) => {
+  switch (tone) {
+    case 'ecstasy':
+      return {
+        bg: 'bg-gradient-to-r from-yellow-100 via-amber-100 to-orange-100',
+        border: 'border-yellow-500',
+        text: 'text-yellow-800',
+        glow: 'shadow-lg shadow-yellow-500/30',
+      };
+    case 'joy':
+      return {
+        bg: 'bg-gradient-to-r from-green-100 to-emerald-100',
+        border: 'border-green-500',
+        text: 'text-green-800',
+        glow: 'shadow-md shadow-green-500/20',
+      };
+    case 'suffering':
+      return {
+        bg: 'bg-gradient-to-r from-orange-100 to-amber-100',
+        border: 'border-orange-500',
+        text: 'text-orange-800',
+        glow: 'shadow-md shadow-orange-500/20',
+      };
+    case 'agony':
+      return {
+        bg: 'bg-gradient-to-r from-red-100 via-rose-100 to-pink-100',
+        border: 'border-red-500',
+        text: 'text-red-800',
+        glow: 'shadow-lg shadow-red-500/30',
+      };
+    default:
+      return {
+        bg: 'bg-parchment-100',
+        border: 'border-tavern-gold/50',
+        text: 'text-tavern-wood',
+        glow: '',
+      };
   }
 };
 
@@ -92,6 +141,42 @@ export default function FeedbackModal({
                       )}
                     />
                   ))}
+                </div>
+              </div>
+            )}
+
+            {feedback.diceState && (
+              <div className={cn(
+                'w-full mb-4 p-4 rounded-xl border-2 flex items-center justify-between',
+                getDiceToneStyle(feedback.diceState.tone).bg,
+                getDiceToneStyle(feedback.diceState.tone).border,
+                getDiceToneStyle(feedback.diceState.tone).glow
+              )}>
+                <div className="flex items-center gap-3">
+                  <Dices size={20} className={getDiceToneStyle(feedback.diceState.tone).text} />
+                  <div>
+                    <div className={cn('font-display text-sm', getDiceToneStyle(feedback.diceState.tone).text)}>
+                      永恒轮回骰子
+                    </div>
+                    {feedback.diceState.isEternalRecurrence && (
+                      <div className="text-xs text-yellow-700 font-bold animate-pulse">
+                        ✨ 永恒轮回！无论对错都算正确，双倍分数！
+                      </div>
+                    )}
+                    {feedback.diceState.isHalfScore && (
+                      <div className="text-xs text-red-700 font-bold">
+                        💀 深渊凝视... 即使答对也只有一半分数
+                      </div>
+                    )}
+                    {!feedback.diceState.isEternalRecurrence && !feedback.diceState.isHalfScore && (
+                      <div className={cn('text-xs', getDiceToneStyle(feedback.diceState.tone).text + '/70')}>
+                        命运之骰已落下
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="text-5xl">
+                  {diceFaces[feedback.diceState.result]}
                 </div>
               </div>
             )}

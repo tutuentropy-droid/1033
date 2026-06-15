@@ -12,6 +12,11 @@ export interface Philosopher {
   praises: string[];
   specialBadge?: Badge;
   easterEgg?: EasterEgg;
+  diceEcstasy?: string[];
+  diceJoy?: string[];
+  diceNeutral?: string[];
+  diceSuffering?: string[];
+  diceAgony?: string[];
 }
 
 export interface Option {
@@ -74,6 +79,15 @@ export interface MaieuticChainState {
   completed: boolean;
 }
 
+export type DiceResult = 1 | 2 | 3 | 4 | 5 | 6;
+
+export interface DiceState {
+  isRolling: boolean;
+  result: DiceResult | null;
+  hasRerolled: boolean;
+  showResult: boolean;
+}
+
 export interface GameState {
   currentPhilosopher: Philosopher | null;
   currentQuestion: Question | null;
@@ -88,6 +102,8 @@ export interface GameState {
   showEasterEgg: boolean;
   showBadgeUnlock: boolean;
   newlyUnlockedBadge: Badge | null;
+  ubermenschWill: number;
+  dice: DiceState;
 }
 
 export interface FeedbackState {
@@ -105,6 +121,12 @@ export interface FeedbackState {
   };
   badgeUnlocked?: Badge;
   easterEggAvailable?: EasterEgg;
+  diceState?: {
+    result: DiceResult;
+    isEternalRecurrence: boolean;
+    isHalfScore: boolean;
+    tone: 'ecstasy' | 'joy' | 'neutral' | 'suffering' | 'agony';
+  };
 }
 
 export const AFFECTION_LEVELS: Record<AffectionLevel, { min: number; max: number; emoji: string; label: string }> = {

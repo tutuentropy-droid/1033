@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { GameState, Philosopher, Question, PhilosopherId, FeedbackState, AffectionLevel, FollowUpQuestion, Badge, EasterEgg } from '@/types';
+import type { GameState, Philosopher, Question, PhilosopherId, FeedbackState, AffectionLevel, FollowUpQuestion, Badge, EasterEgg, DiceResult, DiceState } from '@/types';
 import { INITIAL_AFFECTION, CORRECT_AFFECTION_GAIN, WRONG_AFFECTION_LOSS, AFFECTION_LEVELS } from '@/types';
-import { getPhilosopherById, getRandomTaunt, getRandomPraise } from '@/data/philosophers';
+import { getPhilosopherById, getRandomTaunt, getRandomPraise, getDiceMessage, type DiceTone } from '@/data/philosophers';
 import { getRandomQuestion, shuffleArray, getQuestionsByPhilosopher } from '@/data/questions';
 
 interface GameStore extends GameState {
@@ -26,6 +26,7 @@ interface GameStore extends GameState {
     chainState?: FeedbackState['chainState'];
     badgeUnlocked?: Badge;
     easterEggAvailable?: EasterEgg;
+    diceState?: FeedbackState['diceState'];
   }) => void;
   hideFeedback: () => void;
   setCurrentFollowUpQuestion: (question: FollowUpQuestion | null) => void;
@@ -38,6 +39,10 @@ interface GameStore extends GameState {
   setNewlyUnlockedBadge: (badge: Badge | null) => void;
   getChainDepthByLevel: (philosopherId: PhilosopherId, baseLength: number) => number;
   proceedAfterFeedback: (philosopherId: PhilosopherId) => void;
+  rollDice: (philosopherId: PhilosopherId) => void;
+  rerollDice: (philosopherId: PhilosopherId) => boolean;
+  setDiceShowResult: (show: boolean) => void;
+  addUbermenschWill: (amount: number) => void;
 }
 
 const getInitialAffection = (): Record<PhilosopherId, number> => ({
@@ -64,6 +69,21 @@ const getInitialFeedback = (): FeedbackState => ({
   scoreChange: 0,
 });
 
+const getInitialDice = (): DiceState => ({
+  isRolling: false,
+  result: null,
+  hasRerolled: false,
+  showResult: false,
+});
+
+const getDiceTone = (result: DiceResult): DiceTone => {
+  if (result === 6) return 'ecstasy';
+  if (result === 5) return 'joy';
+  if (result === 3 || result === 4) return 'neutral';
+  if (result === 2) return 'suffering';
+  return 'agony';
+};
+
 export const useGameStore = create<GameStore>()(
   persist(
     (set, get) => ({
@@ -81,6 +101,8 @@ export const useGameStore = create<GameStore>()(
       showBadgeUnlock: false,
       newlyUnlockedBadge: null,
       feedback: getInitialFeedback(),
+      ubermenschWill: 0,
+      dice: getInitialDice(),
 
       setCurrentPhilosopher: (philosopher) => {
         set({ 
@@ -88,6 +110,7 @@ export const useGameStore = create<GameStore>()(
           feedback: getInitialFeedback(),
           maieuticChain: getInitialMaieuticChain(),
           currentFollowUpQuestion: null,
+          dice: getInitialDice(),
         });
       },
 
@@ -135,14 +158,21 @@ export const useGameStore = create<GameStore>()(
           },
           currentFollowUpQuestion: null,
           maieuticChain: getInitialMaieuticChain(),
+          dice: getInitialDice(),
         });
+
+        if (philosopherId === 'nietzsche') {
+          setTimeout(() => {
+            get().rollDice(philosopherId);
+          }, 300);
+        }
         
         return true;
       },
 
       answerQuestion: (optionId, philosopherId) => {
         const state = get();
-        const { currentQuestion } = state;
+        const { currentQuestion, dice } = state;
         
         if (!currentQuestion) return;
 
@@ -152,9 +182,34 @@ export const useGameStore = create<GameStore>()(
         const selectedOption = currentQuestion.options.find(o => o.id === optionId);
         if (!selectedOption) return;
 
-        const isCorrect = selectedOption.isCorrect;
+        const isOriginallyCorrect = selectedOption.isCorrect;
 
-        if (isCorrect && currentQuestion.followUpQuestions && currentQuestion.followUpQuestions.length > 0) {
+        let isCorrect = isOriginallyCorrect;
+        let scoreMultiplier = 1;
+        let diceState: FeedbackState['diceState'] | undefined;
+
+        if (philosopherId === 'nietzsche' && dice.result) {
+          const diceResult = dice.result;
+          const tone = getDiceTone(diceResult);
+          const isEternalRecurrence = diceResult === 6;
+          const isHalfScore = diceResult === 1;
+
+          if (isEternalRecurrence) {
+            isCorrect = true;
+            scoreMultiplier = 2;
+          } else if (isHalfScore) {
+            scoreMultiplier = 0.5;
+          }
+
+          diceState = {
+            result: diceResult,
+            isEternalRecurrence,
+            isHalfScore,
+            tone,
+          };
+        }
+
+        if (isCorrect && currentQuestion.followUpQuestions && currentQuestion.followUpQuestions.length > 0 && philosopherId !== 'nietzsche') {
           const totalDepth = get().getChainDepthByLevel(philosopherId, currentQuestion.baseFollowUpLength || 3);
           const followUpCount = Math.min(totalDepth, currentQuestion.followUpQuestions.length);
           const firstFollowUp = currentQuestion.followUpQuestions[0];
@@ -196,16 +251,28 @@ export const useGameStore = create<GameStore>()(
           return;
         }
 
+        const baseScore = 10;
+        const scoreChange = Math.floor(isCorrect ? baseScore * scoreMultiplier : 0);
         const affectionChange = isCorrect ? CORRECT_AFFECTION_GAIN : -WRONG_AFFECTION_LOSS;
-        const scoreChange = isCorrect ? 10 : 0;
-        const message = isCorrect 
-          ? getRandomPraise(philosopher)
-          : getRandomTaunt(philosopher);
+
+        let message: string;
+        if (diceState) {
+          message = getDiceMessage(philosopher, diceState.tone);
+          if (diceState.isEternalRecurrence) {
+            message = '你接受了永恒轮回的挑战！' + message;
+          }
+        } else {
+          message = isCorrect 
+            ? getRandomPraise(philosopher)
+            : getRandomTaunt(philosopher);
+        }
 
         if (isCorrect) {
+          const ubermenschGain = philosopherId === 'nietzsche' ? 1 : 0;
           set({
             answeredQuestions: [...state.answeredQuestions, currentQuestion.id],
             score: state.score + scoreChange,
+            ubermenschWill: state.ubermenschWill + ubermenschGain,
           });
         }
 
@@ -215,6 +282,7 @@ export const useGameStore = create<GameStore>()(
           message,
           affectionChange,
           scoreChange,
+          diceState,
         });
       },
 
@@ -434,6 +502,8 @@ export const useGameStore = create<GameStore>()(
           showBadgeUnlock: false,
           newlyUnlockedBadge: null,
           feedback: getInitialFeedback(),
+          ubermenschWill: 0,
+          dice: getInitialDice(),
         });
         get().resetAffection();
       },
@@ -504,6 +574,7 @@ export const useGameStore = create<GameStore>()(
             chainState: params.chainState,
             badgeUnlocked: params.badgeUnlocked,
             easterEggAvailable: params.easterEggAvailable,
+            diceState: params.diceState,
           },
         });
       },
@@ -512,6 +583,58 @@ export const useGameStore = create<GameStore>()(
         set({
           feedback: getInitialFeedback(),
         });
+      },
+
+      rollDice: (philosopherId) => {
+        if (philosopherId !== 'nietzsche') return;
+        
+        set({ dice: { ...get().dice, isRolling: true } });
+        
+        setTimeout(() => {
+          const result = (Math.floor(Math.random() * 6) + 1) as DiceResult;
+          set({
+            dice: {
+              isRolling: false,
+              result,
+              hasRerolled: false,
+              showResult: true,
+            },
+          });
+        }, 800);
+      },
+
+      rerollDice: (philosopherId) => {
+        if (philosopherId !== 'nietzsche') return false;
+        
+        const state = get();
+        if (state.dice.hasRerolled || state.ubermenschWill < 3) return false;
+        
+        set({ 
+          ubermenschWill: state.ubermenschWill - 3,
+          dice: { ...state.dice, isRolling: true, hasRerolled: true } 
+        });
+        
+        setTimeout(() => {
+          const result = (Math.floor(Math.random() * 6) + 1) as DiceResult;
+          set({
+            dice: {
+              isRolling: false,
+              result,
+              hasRerolled: true,
+              showResult: true,
+            },
+          });
+        }, 800);
+        
+        return true;
+      },
+
+      setDiceShowResult: (show) => {
+        set(state => ({ dice: { ...state.dice, showResult: show } }));
+      },
+
+      addUbermenschWill: (amount) => {
+        set(state => ({ ubermenschWill: state.ubermenschWill + amount }));
       },
     }),
     {
@@ -522,6 +645,7 @@ export const useGameStore = create<GameStore>()(
         answeredQuestions: state.answeredQuestions,
         unlockedBadges: state.unlockedBadges,
         unlockedEasterEggs: state.unlockedEasterEggs,
+        ubermenschWill: state.ubermenschWill,
       }),
     }
   )

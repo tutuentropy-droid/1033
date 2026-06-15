@@ -97,6 +97,35 @@ export const philosophers: Philosopher[] = [
       '重估价值，做得好！',
       '你明白了——人是应该被超越的。',
     ],
+    diceEcstasy: [
+      '命运之神在微笑！永恒轮回的狂喜降临了！',
+      '是的！就是这样！再来一次，永远再来一次！',
+      '你接受了永恒轮回的挑战——这才是超人的姿态！',
+      '命运宠爱勇者！你值得这双倍的荣耀！',
+    ],
+    diceJoy: [
+      '不错的骰子，命运站在你这边。',
+      '运气也是权力意志的一部分。',
+      '还不错，继续保持。',
+      '命运的骰子滚向了你。',
+    ],
+    diceNeutral: [
+      '普通的一掷，普通的命运。',
+      '不偏不倚，这就是骰子。',
+      '命运不偏不倚，全看你自己。',
+    ],
+    diceSuffering: [
+      '命运开始沉重了...但这就是生命。',
+      '痛苦是价值的试金石。',
+      '厄运？不，这是考验。',
+      '接受它，然后超越它。',
+    ],
+    diceAgony: [
+      '最低的点数！命运在嘲笑你！',
+      '深渊凝视着你——你也凝视着深渊吗？',
+      '这就是永恒轮回的恐怖：你愿意这样的时刻再来一次吗？',
+      '奴隶道德会抱怨，主人道德会重掷。你选哪个？',
+    ],
   },
   {
     id: 'beauvoir',
@@ -135,4 +164,27 @@ export const getRandomTaunt = (philosopher: Philosopher): string => {
 
 export const getRandomPraise = (philosopher: Philosopher): string => {
   return philosopher.praises[Math.floor(Math.random() * philosopher.praises.length)];
+};
+
+export type DiceTone = 'ecstasy' | 'joy' | 'neutral' | 'suffering' | 'agony';
+
+export const getDiceMessage = (philosopher: Philosopher, tone: DiceTone): string => {
+  let messages: string[];
+  switch (tone) {
+    case 'ecstasy':
+      messages = philosopher.diceEcstasy || philosopher.praises;
+      break;
+    case 'joy':
+      messages = philosopher.diceJoy || philosopher.praises;
+      break;
+    case 'suffering':
+      messages = philosopher.diceSuffering || philosopher.taunts;
+      break;
+    case 'agony':
+      messages = philosopher.diceAgony || philosopher.taunts;
+      break;
+    default:
+      messages = philosopher.diceNeutral || [...philosopher.praises, ...philosopher.taunts];
+  }
+  return messages[Math.floor(Math.random() * messages.length)];
 };
