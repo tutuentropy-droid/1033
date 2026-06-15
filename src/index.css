@@ -1,0 +1,156 @@
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Noto Serif SC', serif;
+  line-height: 1.6;
+  font-weight: 400;
+  color: #2C1810;
+  background-color: #F5E6C8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  body {
+    @apply bg-parchment-100 min-h-screen;
+    background-image: 
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    background-blend-mode: overlay;
+  }
+}
+
+@layer components {
+  .parchment-card {
+    @apply bg-parchment-50 border-2 border-parchment-400 rounded-lg shadow-lg;
+    background-image: 
+      linear-gradient(135deg, rgba(255,248,220,0.8) 0%, rgba(245,230,200,0.9) 100%),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%23f5e6c8' surfaceScale='2'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E");
+    background-blend-mode: multiply;
+  }
+
+  .scroll-card {
+    @apply parchment-card p-6 relative overflow-hidden;
+    &::before,
+    &::after {
+      content: '';
+      @apply absolute left-0 right-0 h-4 bg-gradient-to-r from-parchment-300 via-parchment-200 to-parchment-300;
+    }
+    &::before {
+      @apply top-0 rounded-t-lg;
+    }
+    &::after {
+      @apply bottom-0 rounded-b-lg;
+    }
+  }
+
+  .btn-parchment {
+    @apply px-6 py-3 bg-parchment-200 border-2 border-parchment-500 rounded-lg
+           font-serif text-tavern-ink transition-all duration-300
+           hover:bg-parchment-300 hover:shadow-lg hover:-translate-y-0.5
+           active:translate-y-0 active:shadow-md;
+  }
+
+  .btn-gold {
+    @apply px-6 py-3 bg-gradient-to-r from-tavern-gold to-yellow-500 
+           border-2 border-yellow-600 rounded-lg font-serif text-white
+           shadow-md transition-all duration-300
+           hover:shadow-lg hover:-translate-y-0.5 hover:brightness-110
+           active:translate-y-0;
+  }
+
+  .philosopher-avatar {
+    @apply rounded-full border-4 border-tavern-gold shadow-lg 
+           transition-all duration-300 cursor-pointer
+           hover:scale-105 hover:shadow-xl;
+  }
+
+  .affection-bar {
+    @apply h-3 rounded-full bg-parchment-300 overflow-hidden;
+    & > div {
+      @apply h-full rounded-full transition-all duration-500 ease-out;
+    }
+  }
+
+  .ink-text {
+    @apply text-tavern-ink font-serif;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  }
+
+  .title-display {
+    @apply font-display text-4xl md:text-5xl text-tavern-wood;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .wax-seal {
+    @apply w-16 h-16 rounded-full bg-gradient-to-br from-red-600 to-red-800 
+           flex items-center justify-center text-white font-bold shadow-lg;
+    box-shadow: 
+      inset 2px 2px 4px rgba(255,255,255,0.3),
+      inset -2px -2px 4px rgba(0,0,0,0.3),
+      0 4px 8px rgba(0,0,0,0.3);
+  }
+
+  .speech-bubble {
+    @apply relative bg-parchment-50 p-4 rounded-xl border-2 border-parchment-400;
+    &::after {
+      content: '';
+      @apply absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full
+             border-8 border-transparent border-t-parchment-400;
+    }
+    &::before {
+      content: '';
+      @apply absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[calc(100%-2px)]
+             border-8 border-transparent border-t-parchment-50 z-10;
+    }
+  }
+
+  .option-card {
+    @apply parchment-card p-4 cursor-pointer transition-all duration-300
+           hover:shadow-xl hover:-translate-y-1 hover:border-tavern-gold;
+    &.selected {
+      @apply border-tavern-gold ring-2 ring-tavern-gold/30;
+    }
+    &.correct {
+      @apply border-green-600 bg-green-50/50;
+    }
+    &.wrong {
+      @apply border-red-600 bg-red-50/50;
+    }
+  }
+
+  .candle-glow {
+    animation: candleFlicker 3s ease-in-out infinite;
+  }
+
+  @keyframes candleFlicker {
+    0%, 100% { opacity: 1; filter: drop-shadow(0 0 15px rgba(255,200,100,0.8)); }
+    50% { opacity: 0.9; filter: drop-shadow(0 0 20px rgba(255,180,80,0.9)); }
+    25%, 75% { opacity: 0.95; }
+  }
+
+  .typewriter-text {
+    overflow: hidden;
+    white-space: nowrap;
+    animation: typing 2s steps(40, end);
+  }
+
+  @keyframes typing {
+    from { width: 0; }
+    to { width: 100%; }
+  }
+}
+
+@layer utilities {
+  .text-shadow-lg {
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  }
+  .text-shadow-md {
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+  }
+}
