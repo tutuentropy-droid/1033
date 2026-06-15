@@ -42,6 +42,7 @@ export default function Duel() {
     setShowBadgeUnlock,
     setNewlyUnlockedBadge,
     setCurrentFollowUpQuestion,
+    proceedAfterFeedback,
   } = useGameStore();
 
   const philosopher = getPhilosopherById(philosopherId || '');
@@ -69,6 +70,12 @@ export default function Duel() {
     }
   }, [philosopher, currentQuestion, currentPhilosopher, loadNextQuestion]);
 
+  const activeQuestionId = currentFollowUpQuestion?.id || currentQuestion?.id;
+  useEffect(() => {
+    setSelectedOption(null);
+    setHasAnswered(false);
+  }, [activeQuestionId]);
+
   const handleOptionClick = useCallback((optionId: string) => {
     if (hasAnswered) return;
     setSelectedOption(optionId);
@@ -87,27 +94,35 @@ export default function Duel() {
 
   const handleNextQuestion = useCallback(() => {
     if (!philosopherIdTyped) return;
-    hideFeedback();
+    
+    const chainIsActive = maieuticChain.isActive && !maieuticChain.broken && !maieuticChain.completed && currentFollowUpQuestion;
+    const chainIsFinished = maieuticChain.completed || maieuticChain.broken;
+    
     setSelectedOption(null);
     setHasAnswered(false);
+    proceedAfterFeedback(philosopherIdTyped);
     
-    if (maieuticChain.isActive && !maieuticChain.broken && !maieuticChain.completed && currentFollowUpQuestion) {
+    if (chainIsActive) {
       return;
     }
 
-    if (maieuticChain.completed || maieuticChain.broken) {
+    if (chainIsFinished) {
+      setTimeout(() => {
+        const hasMore = loadNextQuestion(philosopherIdTyped);
+        if (!hasMore) {
+          setCurrentQuestion(null);
+        }
+      }, newlyUnlockedBadge && !showBadgeUnlock ? 300 : 0);
+      return;
+    }
+    
+    setTimeout(() => {
       const hasMore = loadNextQuestion(philosopherIdTyped);
       if (!hasMore) {
         setCurrentQuestion(null);
       }
-      return;
-    }
-    
-    const hasMore = loadNextQuestion(philosopherIdTyped);
-    if (!hasMore) {
-      setCurrentQuestion(null);
-    }
-  }, [philosopherIdTyped, hideFeedback, loadNextQuestion, setCurrentQuestion, maieuticChain, currentFollowUpQuestion]);
+    }, newlyUnlockedBadge && !showBadgeUnlock ? 300 : 0);
+  }, [philosopherIdTyped, proceedAfterFeedback, loadNextQuestion, setCurrentQuestion, maieuticChain, currentFollowUpQuestion, newlyUnlockedBadge, showBadgeUnlock]);
 
   const handleBackToTavern = useCallback(() => {
     hideFeedback();

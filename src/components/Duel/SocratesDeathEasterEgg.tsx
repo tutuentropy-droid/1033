@@ -16,6 +16,7 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
   const [isTyping, setIsTyping] = useState(true);
   const [displayedDialogues, setDisplayedDialogues] = useState<number[]>([]);
   const [showIntro, setShowIntro] = useState(true);
+  const [typingForceCompleted, setTypingForceCompleted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const totalDialogues = easterEgg.dialogues.length;
 
@@ -23,7 +24,7 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [displayedDialogues, isTyping]);
+  }, [displayedDialogues, currentIndex]);
 
   const handleTypewriterComplete = useCallback(() => {
     setIsTyping(false);
@@ -32,30 +33,46 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
   const handleStart = useCallback(() => {
     setShowIntro(false);
     setDisplayedDialogues([0]);
+    setCurrentIndex(0);
     setIsTyping(true);
+    setTypingForceCompleted(false);
   }, []);
 
-  const handleNext = useCallback(() => {
-    if (isTyping) {
+  const advanceToNext = useCallback(() => {
+    if (currentIndex >= totalDialogues - 1) {
+      return false;
+    }
+    const nextIndex = currentIndex + 1;
+    setCurrentIndex(nextIndex);
+    setDisplayedDialogues(prev => [...prev, nextIndex]);
+    setIsTyping(true);
+    setTypingForceCompleted(false);
+    return true;
+  }, [currentIndex, totalDialogues]);
+
+  const handleUserAction = useCallback(() => {
+    if (isTyping && !typingForceCompleted) {
+      setTypingForceCompleted(true);
       setIsTyping(false);
       return;
     }
 
-    if (currentIndex < totalDialogues - 1) {
-      const nextIndex = currentIndex + 1;
-      setCurrentIndex(nextIndex);
-      setDisplayedDialogues(prev => [...prev, nextIndex]);
-      setIsTyping(true);
+    if (currentIndex >= totalDialogues - 1) {
+      onClose();
+      return;
     }
-  }, [currentIndex, totalDialogues, isTyping]);
 
-  const handleDialogueClick = useCallback((index: number) => {
-    if (index === currentIndex && isTyping) {
-      setIsTyping(false);
-    } else if (index === currentIndex && !isTyping && currentIndex < totalDialogues - 1) {
-      handleNext();
+    advanceToNext();
+  }, [isTyping, typingForceCompleted, currentIndex, totalDialogues, advanceToNext, onClose]);
+
+  const handleBubbleClick = useCallback((e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    if (index === currentIndex) {
+      handleUserAction();
+    } else if (index < currentIndex) {
+      // 点击历史对话气泡，不做处理
     }
-  }, [currentIndex, isTyping, totalDialogues, handleNext]);
+  }, [currentIndex, handleUserAction]);
 
   const isLastDialogue = currentIndex >= totalDialogues - 1 && !isTyping;
   const currentSpeaker = easterEgg.dialogues[currentIndex]?.speaker;
@@ -66,7 +83,7 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
         return {
           avatar: socratesAvatar,
           color: 'bg-green-600',
-          bubble: 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-300',
+          bubble: 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-300 hover:shadow-lg hover:shadow-green-200/50',
           align: 'items-end',
           nameColor: 'text-green-700',
         };
@@ -74,7 +91,7 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
         return {
           avatar: null,
           color: 'bg-blue-600',
-          bubble: 'bg-gradient-to-br from-blue-50 to-sky-100 border-blue-300',
+          bubble: 'bg-gradient-to-br from-blue-50 to-sky-100 border-blue-300 hover:shadow-lg hover:shadow-blue-200/50',
           align: 'items-start',
           nameColor: 'text-blue-700',
         };
@@ -83,12 +100,25 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
         return {
           avatar: null,
           color: 'bg-amber-600',
-          bubble: 'bg-gradient-to-br from-amber-50 to-yellow-100 border-amber-300',
+          bubble: 'bg-gradient-to-br from-amber-50 to-yellow-100 border-amber-300 hover:shadow-lg hover:shadow-amber-200/50 cursor-pointer',
           align: 'items-center',
           nameColor: 'text-amber-700',
           isNarrator: true,
         };
     }
+  };
+
+  const renderDialogueContent = (dialogue: typeof easterEgg.dialogues[0], isCurrent: boolean) => {
+    if (isCurrent && isTyping && !typingForceCompleted) {
+      return (
+        <TypewriterText 
+          text={dialogue.text} 
+          speed={20}
+          onComplete={handleTypewriterComplete}
+        />
+      );
+    }
+    return dialogue.text;
   };
 
   if (showIntro) {
@@ -162,7 +192,7 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
               </button>
 
               <p className="mt-4 text-xs text-tavern-wood/50 font-serif">
-                点击对话气泡可快速推进
+                点击对话气泡或"继续"按钮可推进，点击正在打字的对话可跳过动画
               </p>
             </div>
           </ParchmentCard>
@@ -215,7 +245,7 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
       <main 
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-4 py-6"
-        onClick={handleNext}
+        onClick={handleUserAction}
       >
         <div className="max-w-3xl mx-auto space-y-5">
           {displayedDialogues.map((dialogueIndex) => {
@@ -223,6 +253,7 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
             const style = getSpeakerStyle(dialogue.speaker);
             const isCurrent = dialogueIndex === currentIndex;
             const isNarrator = style.isNarrator;
+            const isClickable = isCurrent || isNarrator;
 
             return (
               <div 
@@ -233,10 +264,14 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
                 )}
               >
                 {isNarrator ? (
-                  <div className="w-full max-w-2xl mx-auto">
+                  <div 
+                    className="w-full max-w-2xl mx-auto"
+                    onClick={(e) => isCurrent && handleBubbleClick(e, dialogueIndex)}
+                  >
                     <div className={cn(
-                      'p-5 rounded-xl border-2 text-center',
-                      style.bubble
+                      'p-5 rounded-xl border-2 text-center transition-all duration-300',
+                      style.bubble,
+                      isCurrent && !isTyping && 'ring-2 ring-amber-400/50 ring-offset-2 ring-offset-transparent'
                     )}>
                       <p className={cn(
                         'text-xs font-display mb-2 tracking-wider',
@@ -245,23 +280,28 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
                         — {dialogue.speaker} —
                       </p>
                       <p className="text-tavern-ink font-serif leading-relaxed italic">
-                        {isCurrent && isTyping ? (
-                          <TypewriterText 
-                            text={dialogue.text} 
-                            speed={15}
-                            onComplete={handleTypewriterComplete}
-                          />
-                        ) : (
-                          dialogue.text
-                        )}
+                        {renderDialogueContent(dialogue, isCurrent)}
                       </p>
+                      {isCurrent && (
+                        <div className={cn(
+                          'mt-3 text-xs font-serif transition-opacity',
+                          isTyping && !typingForceCompleted ? 'opacity-70' : 'opacity-100'
+                        )}>
+                          {isTyping && !typingForceCompleted
+                            ? '（点击任意位置跳过动画）'
+                            : '（点击任意位置继续）'
+                          }
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
-                  <div className={cn(
-                    'flex gap-3 max-w-[85%]',
-                    dialogue.speaker === '苏格拉底' ? 'flex-row-reverse' : 'flex-row'
-                  )}>
+                  <div 
+                    className={cn(
+                      'flex gap-3 max-w-[85%]',
+                      dialogue.speaker === '苏格拉底' ? 'flex-row-reverse' : 'flex-row'
+                    )}
+                  >
                     <div className="flex-shrink-0">
                       <div className={cn(
                         'w-11 h-11 rounded-full flex items-center justify-center text-white shadow-lg border-2 border-white overflow-hidden',
@@ -290,29 +330,29 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
                       </p>
                       <div 
                         className={cn(
-                          'p-4 rounded-2xl border-2 shadow-md transition-all cursor-pointer',
+                          'p-4 rounded-2xl border-2 shadow-md transition-all duration-300 cursor-pointer',
                           style.bubble,
                           dialogue.speaker === '苏格拉底' 
                             ? 'rounded-tr-sm' 
                             : 'rounded-tl-sm',
-                          isCurrent && 'ring-2 ring-amber-400/50 ring-offset-2 ring-offset-transparent'
+                          isCurrent && !isTyping && 'ring-2 ring-amber-400/50 ring-offset-2 ring-offset-transparent'
                         )}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDialogueClick(dialogueIndex);
-                        }}
+                        onClick={(e) => handleBubbleClick(e, dialogueIndex)}
                       >
                         <p className="text-tavern-ink font-serif leading-relaxed">
-                          {isCurrent && isTyping ? (
-                            <TypewriterText 
-                              text={dialogue.text} 
-                              speed={25}
-                              onComplete={handleTypewriterComplete}
-                            />
-                          ) : (
-                            dialogue.text
-                          )}
+                          {renderDialogueContent(dialogue, isCurrent)}
                         </p>
+                        {isCurrent && (
+                          <div className={cn(
+                            'mt-2 text-xs font-serif transition-opacity',
+                            isTyping && !typingForceCompleted ? 'opacity-70' : 'opacity-100'
+                          )}>
+                            {isTyping && !typingForceCompleted
+                              ? '（点击气泡跳过动画）'
+                              : '（点击气泡继续）'
+                            }
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -321,7 +361,7 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
             );
           })}
 
-          {isTyping && (
+          {isTyping && !typingForceCompleted && (
             <div className={cn(
               'flex',
               currentSpeaker === '苏格拉底' ? 'justify-end' : 'justify-start',
@@ -356,20 +396,26 @@ export default function SocratesDeathEasterEgg({ easterEgg, onClose, socratesAva
 
           {!isLastDialogue ? (
             <button
-              onClick={handleNext}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUserAction();
+              }}
               className={cn(
                 'px-8 py-3 rounded-xl font-display text-lg shadow-lg transition-all flex items-center gap-2',
-                isTyping
-                  ? 'bg-amber-800/50 text-amber-200'
+                isTyping && !typingForceCompleted
+                  ? 'bg-amber-800/50 text-amber-200 hover:bg-amber-800/70'
                   : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white hover:scale-[1.02] active:scale-[0.98] hover:shadow-amber-500/30'
               )}
             >
-              {isTyping ? '跳过动画' : '继续对话'}
-              <ChevronRight size={20} className={cn(isTyping && 'animate-pulse')} />
+              {isTyping && !typingForceCompleted ? '跳过动画' : '继续对话'}
+              <ChevronRight size={20} className={cn(isTyping && !typingForceCompleted && 'animate-pulse')} />
             </button>
           ) : (
             <button
-              onClick={onClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
               className="px-8 py-3 rounded-xl font-display text-lg shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-[1.02] active:scale-[0.98] hover:shadow-purple-500/30 transition-all flex items-center gap-2"
             >
               ✨ 对话结束，铭记追问

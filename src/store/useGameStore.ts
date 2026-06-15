@@ -311,7 +311,10 @@ export const useGameStore = create<GameStore>()(
           
           if (philosopher.specialBadge && !state.unlockedBadges.includes(philosopher.specialBadge.id)) {
             badgeUnlocked = philosopher.specialBadge;
-            get().unlockBadge(philosopher.specialBadge, philosopherId);
+            set({
+              unlockedBadges: [...state.unlockedBadges, philosopher.specialBadge.id],
+              newlyUnlockedBadge: philosopher.specialBadge,
+            });
             
             if (philosopher.easterEgg) {
               easterEggAvailable = philosopher.easterEgg;
@@ -468,6 +471,7 @@ export const useGameStore = create<GameStore>()(
       proceedAfterFeedback: (philosopherId) => {
         const state = get();
         const chain = state.maieuticChain;
+        const hasNewBadge = state.newlyUnlockedBadge !== null && !state.showBadgeUnlock;
 
         if (chain.isActive && !chain.broken && !chain.completed && state.currentFollowUpQuestion) {
           return;
@@ -481,6 +485,12 @@ export const useGameStore = create<GameStore>()(
         }
 
         get().hideFeedback();
+
+        if (hasNewBadge) {
+          setTimeout(() => {
+            set({ showBadgeUnlock: true });
+          }, 300);
+        }
       },
 
       showFeedback: (params) => {
