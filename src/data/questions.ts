@@ -12,6 +12,45 @@ export const questions: Question[] = [
       { id: 'q1d', text: '"正义是相对的，每个人都有自己的看法。"', isCorrect: false, philosopherId: 'socrates' },
     ],
     explanation: '苏格拉底会通过追问定义和前提来揭示概念的复杂性，而不是直接给出答案。',
+    baseFollowUpLength: 3,
+    followUpQuestions: [
+      {
+        id: 'q1-f1',
+        depth: 1,
+        scene: '朋友想了想，回答道："法律是多数人制定的，多数人的意志就是正义的。"苏格拉底继续追问...',
+        options: [
+          { id: 'q1-f1a', text: '"多数人就一定对吗？如果多数人制定的法律伤害了少数人，这还是正义吗？"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q1-f1b', text: '"多数人的暴政依然是暴政，正义应该超越集体意志。"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q1-f1c', text: '"多数人中的女性声音被充分代表了吗？"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q1-f1d', text: '"多数人说了算，这就是民主的正义。"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底不会接受"多数即正义"的简单答案，他会追问多数人意志的道德正当性。',
+      },
+      {
+        id: 'q1-f2',
+        depth: 2,
+        scene: '朋友困惑了，又说："那正义就是强者的利益吧？强者制定法律维护自己的利益。"苏格拉底继续追问...',
+        options: [
+          { id: 'q1-f2a', text: '"强者真的知道自己的利益是什么吗？如果强者搞错了自己的利益，那法律还正义吗？"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q1-f2b', text: '"没错！正义就是强者的利益，弱者不过是被欺骗的对象。"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q1-f2c', text: '"所谓强者，大多是在父权体系下占据优势的男性。"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q1-f2d', text: '"那我就不知道什么是正义了。"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底会追问"强者"是否真正拥有关于自身利益的知识，把讨论引向知识与正义的关系。',
+      },
+      {
+        id: 'q1-f3',
+        depth: 3,
+        scene: '朋友彻底困惑了："那请你告诉我，正义到底是什么？"苏格拉底的最后回应是...',
+        options: [
+          { id: 'q1-f3a', text: '"我也不知道正义是什么，但我们一起继续追问，或许能更接近它。"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q1-f3b', text: '"正义是弱者的幻觉，超人创造自己的正义。"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q1-f3c', text: '"正义需要先打破性别压迫的结构，才有可能真正实现。"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q1-f3d', text: '"正义就是己所不欲勿施于人。"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底的智慧在于承认自己的无知，并邀请对话者一起继续探索。助产术不生产答案，而是生产思考。',
+      },
+    ],
   },
   {
     id: 'q2',
@@ -24,6 +63,45 @@ export const questions: Question[] = [
       { id: 'q2d', text: '"只要问心无愧，就是好人。"', isCorrect: false, philosopherId: 'socrates' },
     ],
     explanation: '苏格拉底的"助产术"会通过追问帮助对方澄清自己的概念，而不是接受表面的答案。',
+    baseFollowUpLength: 3,
+    followUpQuestions: [
+      {
+        id: 'q2-f1',
+        depth: 1,
+        scene: '那人回答："好就是不伤害别人，不偷盗不杀人。这些都是法律规定的。"苏格拉底继续追问...',
+        options: [
+          { id: 'q2-f1a', text: '"如果不偷盗不伤害别人只是因为害怕被抓，那你是真的好，还是只是胆小呢？"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q2-f1b', text: '"不偷盗只是因为你不够强去掠夺，奴隶的道德！"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q2-f1c', text: '"这些法律是在谁的利益下制定的？有没有可能某些伤害不被算作伤害？"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q2-f1d', text: '"反正我不做坏事就行了。"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底会区分行为的外在表现与内在动机，追问道德行为的真正来源。',
+      },
+      {
+        id: 'q2-f2',
+        depth: 2,
+        scene: '那人想了想："好吧，就算我是因为害怕惩罚，但我做的事是好事，这还不够吗？"苏格拉底继续追问...',
+        options: [
+          { id: 'q2-f2a', text: '"如果你不知道什么是真正的好，只是碰巧做了好事，你能说自己是好人吗？一个好的行为和一个好人，是同一回事吗？"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q2-f2b', text: '"不够！奴隶的道德不管外在内在都是奴性的！"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q2-f2c', text: '"你有没有想过，你害怕的惩罚系统，本身就是维护不公正的？"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q2-f2d', text: '"那我真不知道该怎么回答了。"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底会进一步追问知识与德行的关系：真正的德行需要对善的知识，而不仅仅是偶然的行为。',
+      },
+      {
+        id: 'q2-f3',
+        depth: 3,
+        scene: '那人沉默良久，最后说："苏格拉底，你让我意识到，我其实并不知道什么是真正的善。"苏格拉底最后说道...',
+        options: [
+          { id: 'q2-f3a', text: '"很好！知道自己不知道，这是进步的开始。让我们一起继续追问什么是善。"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q2-f3b', text: '"善是强者创造的，你要成为强者才能定义它！"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q2-f3c', text: '"不知道就对了，因为所谓的善很多时候都是压迫的工具。"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q2-f3d', text: '"别问了，行善就是了。"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底的"无知之知"是哲学的起点。助产术的目的不是灌输答案，而是帮助对话者产出自已的思考。',
+      },
+    ],
   },
   {
     id: 'q3',
@@ -84,6 +162,45 @@ export const questions: Question[] = [
       { id: 'q7d', text: '"很好，知识就是力量。"', isCorrect: false, philosopherId: 'socrates' },
     ],
     explanation: '苏格拉底的"无知之知"认为，承认自己的无知才是真正智慧的开始。',
+    baseFollowUpLength: 3,
+    followUpQuestions: [
+      {
+        id: 'q7-f1',
+        depth: 1,
+        scene: '学生得意地说："我不知道的当然很少了！我精通数学、修辞、诗歌，还有什么不知道的呢？"苏格拉底继续追问...',
+        options: [
+          { id: 'q7-f1a', text: '"你知道什么是善吗？你知道什么是美吗？你知道什么是正义吗？——这些你最应该知道的东西，你真的知道吗？"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q7-f1b', text: '"精通再多也是奴隶的学问，真正的智慧是重估一切价值！"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q7-f1c', text: '"你学的这些是谁规定的知识？有没有可能排除了女性和底层的视角？"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q7-f1d', text: '"老师你别考我了，反正我都知道。"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底会把知识从技术层面引向人生最重要的问题——关于善、美、正义的知识，这些才是真正重要的。',
+      },
+      {
+        id: 'q7-f2',
+        depth: 2,
+        scene: '学生说："善就是帮助朋友，美就是好看的东西，正义就是遵守法律。这些我当然知道！"苏格拉底继续追问...',
+        options: [
+          { id: 'q7-f2a', text: '"如果你的朋友做了坏事，帮助他还是善吗？如果一幅画好看但内容邪恶，还是美的吗？如果法律本身不正义，遵守它还是正义吗？"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q7-f2b', text: '"这些定义都是奴隶道德的产物，要全部推倒重来！"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q7-f2c', text: '"你说的美是谁定义的？是不是男性凝视下的美？"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q7-f2d', text: '"这...你说得太复杂了。"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底通过举出反例来揭示学生定义中的漏洞，让学生意识到自己其实并没有真正理解这些概念。',
+      },
+      {
+        id: 'q7-f3',
+        depth: 3,
+        scene: '学生低下头，惭愧地说："老师，我现在发现，我自以为知道的东西，其实我并不知道。"苏格拉底最后说道...',
+        options: [
+          { id: 'q7-f3a', text: '"这就是你比别人更有智慧的地方——你知道自己不知道。而别人连这一点都不知道。"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q7-f3b', text: '"现在开始重估一切价值吧！你将成为超人！"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q7-f3c', text: '"很好，现在你可以开始质疑那些塑造你认知的权力结构了。"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q7-f3d', text: '"没关系，多读几本书就知道了。"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底的"无知之知"不是消极的不可知论，而是一种积极的哲学态度：认识到自己的局限，才能真正开始追求智慧。',
+      },
+    ],
   },
   {
     id: 'q8',
@@ -120,6 +237,45 @@ export const questions: Question[] = [
       { id: 'q10d', text: '"那你就好好为人民服务吧。"', isCorrect: false, philosopherId: 'socrates' },
     ],
     explanation: '苏格拉底会追问那些声称拥有知识的人，揭示他们的所谓知识其实是偏见。',
+    baseFollowUpLength: 3,
+    followUpQuestions: [
+      {
+        id: 'q10-f1',
+        depth: 1,
+        scene: '政治家拍胸脯说："好就是让人民安居乐业，让城邦繁荣富强。这难道不对吗？"苏格拉底继续追问...',
+        options: [
+          { id: 'q10-f1a', text: '"安居乐业是为了什么？繁荣富强又是为了什么？你追求的这些，最终是为了什么？"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q10-f1b', text: '"繁荣富强只是平庸的目标，真正的城邦需要超人来创造新价值！"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q10-f1c', text: '"你的繁荣富强中，女性的贡献被算进去了吗？还是只算了男性的？"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q10-f1d', text: '"反正我是为了人民好，你别问了。"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底会不断追问事物的目的（telos），因为只有知道了最终目的，才能判断当下的选择是否真正是"好"的。',
+      },
+      {
+        id: 'q10-f2',
+        depth: 2,
+        scene: '政治家不耐烦地说："为了什么？为了人民的幸福！你这人怎么这么多问题！"苏格拉底继续追问...',
+        options: [
+          { id: 'q10-f2a', text: '"幸福是什么？如果人民觉得快乐，但其实过着被奴役的生活，这算幸福吗？你真的愿意为人民的真正幸福负责吗？"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q10-f2b', text: '"人民的幸福是奴隶的快乐，真正的强者追求的是伟大和荣耀！"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q10-f2c', text: '"你说的幸福是不是男人定义的幸福？女人的幸福可能完全是另一回事。"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q10-f2d', text: '"你再问我就叫人把你抓起来了！"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底会追问幸福的真正含义，区分表面的快乐与真正的福祉，以及区分统治者的利益与人民的利益。',
+      },
+      {
+        id: 'q10-f3',
+        depth: 3,
+        scene: '政治家沉默不语，最后低声说："我从未想过这些问题...也许我并不像我以为的那样知道什么是好。"苏格拉底最后说道...',
+        options: [
+          { id: 'q10-f3a', text: '"那就从今天开始思考吧。一个不知道什么是好的统治者，只会带领人民走向深渊。但承认自己不知道，已经是改变的开始了。"', isCorrect: true, philosopherId: 'socrates' },
+          { id: 'q10-f3b', text: '"那就下台吧，让真正的强者来统治！"', isCorrect: false, philosopherId: 'nietzsche' },
+          { id: 'q10-f3c', text: '"那就去听听被你忽略的声音吧，这是改变的开始。"', isCorrect: false, philosopherId: 'beauvoir' },
+          { id: 'q10-f3d', text: '"知道就好，以后多听意见就行。"', isCorrect: false, philosopherId: 'socrates' },
+        ],
+        explanation: '苏格拉底对统治者的追问是出于对城邦的爱——他相信只有清醒的统治者才能带领人民走向真正的善。这种追问后来也为他招来了杀身之祸。',
+      },
+    ],
   },
   {
     id: 'q11',

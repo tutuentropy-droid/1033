@@ -10,6 +10,8 @@ export interface Philosopher {
   quote: string;
   taunts: string[];
   praises: string[];
+  specialBadge?: Badge;
+  easterEgg?: EasterEgg;
 }
 
 export interface Option {
@@ -19,15 +21,58 @@ export interface Option {
   philosopherId: PhilosopherId;
 }
 
+export interface FollowUpQuestion {
+  id: string;
+  scene: string;
+  options: Option[];
+  explanation: string;
+  depth: number;
+}
+
 export interface Question {
   id: string;
   philosopherId: PhilosopherId;
   scene: string;
   options: Option[];
   explanation: string;
+  followUpQuestions?: FollowUpQuestion[];
+  baseFollowUpLength?: number;
 }
 
 export type AffectionLevel = 'enemy' | 'neutral' | 'friendly' | 'bosom';
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  rarity: 'common' | 'rare' | 'legendary';
+  unlockCondition: string;
+}
+
+export interface EasterEgg {
+  id: string;
+  title: string;
+  description: string;
+  unlockBadgeId: string;
+  dialogues: EasterEggDialogue[];
+}
+
+export interface EasterEggDialogue {
+  speaker: string;
+  text: string;
+  avatar?: string;
+}
+
+export interface MaieuticChainState {
+  isActive: boolean;
+  mainQuestionId: string | null;
+  currentDepth: number;
+  totalDepth: number;
+  answeredCorrectlyInChain: string[];
+  broken: boolean;
+  completed: boolean;
+}
 
 export interface GameState {
   currentPhilosopher: Philosopher | null;
@@ -36,6 +81,13 @@ export interface GameState {
   score: number;
   round: number;
   answeredQuestions: string[];
+  unlockedBadges: string[];
+  unlockedEasterEggs: string[];
+  maieuticChain: MaieuticChainState;
+  currentFollowUpQuestion: FollowUpQuestion | null;
+  showEasterEgg: boolean;
+  showBadgeUnlock: boolean;
+  newlyUnlockedBadge: Badge | null;
 }
 
 export interface FeedbackState {
@@ -43,6 +95,16 @@ export interface FeedbackState {
   isCorrect: boolean;
   message: string;
   affectionChange: number;
+  scoreChange: number;
+  chainState?: {
+    isChainQuestion: boolean;
+    chainDepth: number;
+    chainTotal: number;
+    chainBroken: boolean;
+    chainCompleted: boolean;
+  };
+  badgeUnlocked?: Badge;
+  easterEggAvailable?: EasterEgg;
 }
 
 export const AFFECTION_LEVELS: Record<AffectionLevel, { min: number; max: number; emoji: string; label: string }> = {
