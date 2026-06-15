@@ -2,18 +2,21 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { GameState, Philosopher, Question, PhilosopherId, FeedbackState, AffectionLevel } from '@/types';
 import { INITIAL_AFFECTION, CORRECT_AFFECTION_GAIN, WRONG_AFFECTION_LOSS, AFFECTION_LEVELS } from '@/types';
-import { philosophers, getRandomTaunt, getRandomPraise } from '@/data/philosophers';
-import { getRandomQuestion, shuffleArray } from '@/data/questions';
+import { getPhilosopherById, getRandomTaunt, getRandomPraise } from '@/data/philosophers';
+import { getRandomQuestion, shuffleArray, getQuestionsByPhilosopher } from '@/data/questions';
 
 interface GameStore extends GameState {
   feedback: FeedbackState;
   setCurrentPhilosopher: (philosopher: Philosopher | null) => void;
   setCurrentQuestion: (question: Question | null) => void;
   loadNextQuestion: (philosopherId: PhilosopherId) => boolean;
-  answerQuestion: (optionId: string) => void;
+  answerQuestion: (optionId: string, philosopherId: PhilosopherId) => void;
   updateAffection: (philosopherId: PhilosopherId, change: number) => void;
   getAffectionLevel: (philosopherId: PhilosopherId) => AffectionLevel;
+  getAnsweredCountByPhilosopher: (philosopherId: PhilosopherId) => number;
   resetGame: () => void;
+  resetAffection: () => void;
+  resetPhilosopherProgress: (philosopherId: PhilosopherId) => void;
   showFeedback: (isCorrect: boolean, message: string, affectionChange: number) => void;
   hideFeedback: () => void;
 }
@@ -41,7 +44,15 @@ export const useGameStore = create<GameStore>()(
       },
 
       setCurrentPhilosopher: (philosopher) => {
-        set({ currentPhilosopher: philosopher });
+        set({ 
+          currentPhilosopher: philosopher,
+          feedback: {
+            show: false,
+            isCorrect: false,
+            message: '',
+            affectionChange: 0,
+          },
+        });
       },
 
       setCurrentQuestion: (question) => {
@@ -50,12 +61,21 @@ export const useGameStore = create<GameStore>()(
 
       loadNextQuestion: (philosopherId) => {
         const state = get();
-        const question = getRandomQuestion(philosopherId, state.answeredQuestions);
+        const philosopherQuestions = getQuestionsByPhilosopher(philosopherId);
+        const answeredForPhilosopher = state.answeredQuestions.filter(
+          qId => philosopherQuestions.some(q => q.id === qId)
+        );
         
-        if (!question) {
+        const availableQuestions = philosopherQuestions.filter(
+          q => !answeredForPhilosopher.includes(q.id)
+        );
+        
+        if (availableQuestions.length === 0) {
           return false;
         }
 
+        const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+        const question = availableQuestions[randomIndex];
         const shuffledOptions = shuffleArray(question.options);
         
         set({
@@ -63,17 +83,19 @@ export const useGameStore = create<GameStore>()(
             ...question,
             options: shuffledOptions,
           },
-          round: state.round + 1,
         });
         
         return true;
       },
 
-      answerQuestion: (optionId) => {
+      answerQuestion: (optionId, philosopherId) => {
         const state = get();
-        const { currentQuestion, currentPhilosopher } = state;
+        const { currentQuestion } = state;
         
-        if (!currentQuestion || !currentPhilosopher) return;
+        if (!currentQuestion) return;
+
+        const philosopher = getPhilosopherById(philosopherId);
+        if (!philosopher) return;
 
         const selectedOption = currentQuestion.options.find(o => o.id === optionId);
         if (!selectedOption) return;
@@ -81,15 +103,15 @@ export const useGameStore = create<GameStore>()(
         const isCorrect = selectedOption.isCorrect;
         const affectionChange = isCorrect ? CORRECT_AFFECTION_GAIN : -WRONG_AFFECTION_LOSS;
         const message = isCorrect 
-          ? getRandomPraise(currentPhilosopher)
-          : getRandomTaunt(currentPhilosopher);
+          ? getRandomPraise(philosopher)
+          : getRandomTaunt(philosopher);
 
         set({
           answeredQuestions: [...state.answeredQuestions, currentQuestion.id],
           score: state.score + (isCorrect ? 10 : 0),
         });
 
-        get().updateAffection(currentPhilosopher.id, affectionChange);
+        get().updateAffection(philosopherId, affectionChange);
         get().showFeedback(isCorrect, message, affectionChange);
       },
 
@@ -110,6 +132,14 @@ export const useGameStore = create<GameStore>()(
         return 'bosom';
       },
 
+      getAnsweredCountByPhilosopher: (philosopherId) => {
+        const state = get();
+        const philosopherQuestions = getQuestionsByPhilosopher(philosopherId);
+        return state.answeredQuestions.filter(
+          qId => philosopherQuestions.some(q => q.id === qId)
+        ).length;
+      },
+
       resetGame: () => {
         set({
           currentPhilosopher: null,
@@ -122,6 +152,29 @@ export const useGameStore = create<GameStore>()(
             isCorrect: false,
             message: '',
             affectionChange: 0,
+          },
+        });
+        get().resetAffection();
+      },
+
+      resetAffection: () => {
+        set({
+          affection: getInitialAffection(),
+        });
+      },
+
+      resetPhilosopherProgress: (philosopherId) => {
+        const state = get();
+        const philosopherQuestions = getQuestionsByPhilosopher(philosopherId);
+        const newAnsweredQuestions = state.answeredQuestions.filter(
+          qId => !philosopherQuestions.some(q => q.id === qId)
+        );
+        
+        set({
+          answeredQuestions: newAnsweredQuestions,
+          affection: {
+            ...state.affection,
+            [philosopherId]: INITIAL_AFFECTION,
           },
         });
       },

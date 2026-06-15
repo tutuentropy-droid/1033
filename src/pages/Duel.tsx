@@ -21,16 +21,17 @@ export default function Duel() {
     currentPhilosopher,
     currentQuestion,
     feedback,
-    round,
-    answeredQuestions,
     setCurrentPhilosopher,
     loadNextQuestion,
     answerQuestion,
     hideFeedback,
     setCurrentQuestion,
+    getAnsweredCountByPhilosopher,
+    resetPhilosopherProgress,
   } = useGameStore();
 
-  const philosopher = currentPhilosopher || getPhilosopherById(philosopherId || '');
+  const philosopher = getPhilosopherById(philosopherId || '');
+  const philosopherIdTyped = philosopher?.id as 'socrates' | 'nietzsche' | 'beauvoir';
 
   useEffect(() => {
     if (!philosopher) {
@@ -38,14 +39,20 @@ export default function Duel() {
       return;
     }
 
-    if (!currentPhilosopher) {
+    if (!currentPhilosopher || currentPhilosopher.id !== philosopher.id) {
       setCurrentPhilosopher(philosopher);
+      hideFeedback();
+      setCurrentQuestion(null);
+      setSelectedOption(null);
+      setHasAnswered(false);
     }
+  }, [philosopherId, philosopher, currentPhilosopher, navigate, setCurrentPhilosopher, hideFeedback, setCurrentQuestion]);
 
-    if (!currentQuestion) {
+  useEffect(() => {
+    if (!currentQuestion && philosopher && currentPhilosopher?.id === philosopher.id) {
       loadNextQuestion(philosopher.id as 'socrates' | 'nietzsche' | 'beauvoir');
     }
-  }, [philosopherId, philosopher, currentPhilosopher, currentQuestion, navigate, setCurrentPhilosopher, loadNextQuestion]);
+  }, [philosopher, currentQuestion, currentPhilosopher, loadNextQuestion]);
 
   const handleOptionClick = useCallback((optionId: string) => {
     if (hasAnswered) return;
@@ -53,21 +60,21 @@ export default function Duel() {
   }, [hasAnswered]);
 
   const handleConfirm = useCallback(() => {
-    if (!selectedOption || hasAnswered) return;
+    if (!selectedOption || hasAnswered || !philosopherIdTyped) return;
     setHasAnswered(true);
-    answerQuestion(selectedOption);
-  }, [selectedOption, hasAnswered, answerQuestion]);
+    answerQuestion(selectedOption, philosopherIdTyped);
+  }, [selectedOption, hasAnswered, answerQuestion, philosopherIdTyped]);
 
   const handleNextQuestion = useCallback(() => {
-    if (!philosopher) return;
+    if (!philosopherIdTyped) return;
     hideFeedback();
     setSelectedOption(null);
     setHasAnswered(false);
-    const hasMore = loadNextQuestion(philosopher.id as 'socrates' | 'nietzsche' | 'beauvoir');
+    const hasMore = loadNextQuestion(philosopherIdTyped);
     if (!hasMore) {
       setCurrentQuestion(null);
     }
-  }, [philosopher, hideFeedback, loadNextQuestion, setCurrentQuestion]);
+  }, [philosopherIdTyped, hideFeedback, loadNextQuestion, setCurrentQuestion]);
 
   const handleBackToTavern = useCallback(() => {
     hideFeedback();
@@ -77,21 +84,21 @@ export default function Duel() {
   }, [hideFeedback, setCurrentPhilosopher, setCurrentQuestion, navigate]);
 
   const handleReset = useCallback(() => {
-    if (!philosopher) return;
+    if (!philosopherIdTyped) return;
     hideFeedback();
     setSelectedOption(null);
     setHasAnswered(false);
-    loadNextQuestion(philosopher.id as 'socrates' | 'nietzsche' | 'beauvoir');
-  }, [philosopher, hideFeedback, loadNextQuestion]);
+    resetPhilosopherProgress(philosopherIdTyped);
+    loadNextQuestion(philosopherIdTyped);
+  }, [philosopherIdTyped, hideFeedback, resetPhilosopherProgress, loadNextQuestion]);
 
   if (!philosopher) {
     return null;
   }
 
-  const totalQuestions = getQuestionsByPhilosopher(philosopher.id as 'socrates' | 'nietzsche' | 'beauvoir').length;
-  const answeredCount = answeredQuestions.filter(
-    q => getQuestionsByPhilosopher(philosopher.id as 'socrates' | 'nietzsche' | 'beauvoir').some(pq => pq.id === q)
-  ).length;
+  const totalQuestions = philosopher ? getQuestionsByPhilosopher(philosopherIdTyped).length : 0;
+  const answeredCount = philosopher ? getAnsweredCountByPhilosopher(philosopherIdTyped) : 0;
+  const currentRound = philosopher && currentQuestion ? answeredCount + 1 : 0;
   const hasMoreQuestions = answeredCount < totalQuestions;
 
   if (!currentQuestion && !hasMoreQuestions) {
@@ -150,7 +157,7 @@ export default function Duel() {
               </button>
               <div className="flex items-center gap-4">
                 <div className="text-parchment-100 font-serif">
-                  第 <span className="text-tavern-gold font-bold">{round}</span> / {totalQuestions} 题
+                  第 <span className="text-tavern-gold font-bold">{currentRound}</span> / {totalQuestions} 题
                 </div>
                 <button
                   onClick={handleReset}
