@@ -62,7 +62,7 @@ export default function OptionCard({
   };
 
   return (
-    <div className="relative group">
+    <div className="relative">
       <button
         className={getCardClass()}
         onClick={onClick}
@@ -76,9 +76,30 @@ export default function OptionCard({
           <span className="flex-shrink-0 w-8 h-8 rounded-full bg-tavern-gold/20 text-tavern-gold font-bold flex items-center justify-center text-lg">
             {optionLabels[index]}
           </span>
-          <p className="text-left text-tavern-ink font-serif leading-relaxed flex-1">
-            {displayText}
-          </p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2">
+              <p className="text-left text-tavern-ink font-serif leading-relaxed flex-1">
+                {displayText}
+              </p>
+              {isBeauvoirMode && !showResult && (
+                <button
+                  onClick={handleGazeClick}
+                  disabled={disabled}
+                  className={cn(
+                    "flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-md",
+                    "bg-pink-500/90 text-white text-xs font-display",
+                    "hover:bg-pink-600 hover:scale-105 transition-all",
+                    "shadow-md shadow-pink-500/20",
+                    disabled && "cursor-not-allowed opacity-50"
+                  )}
+                  title="查看他者视角（会增加凝视值）"
+                >
+                  {showOtherPerspective ? <EyeOff size={12} /> : <Eye size={12} />}
+                  <span className="hidden sm:inline">他者视角</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         {showOtherPerspective && (
@@ -97,26 +118,6 @@ export default function OptionCard({
           </div>
         )}
       </button>
-
-      {isBeauvoirMode && !showResult && (
-        <button
-          onClick={handleGazeClick}
-          disabled={disabled}
-          className={cn(
-            "absolute -right-2 top-1/2 -translate-y-1/2 translate-x-full",
-            "opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-            "flex items-center gap-1 px-2 py-1 rounded-lg",
-            "bg-pink-500/90 text-white text-xs font-display",
-            "hover:bg-pink-600 hover:scale-105 transition-all",
-            "shadow-lg shadow-pink-500/30",
-            disabled && "cursor-not-allowed opacity-50"
-          )}
-          title="查看他者视角（会增加凝视值）"
-        >
-          {showOtherPerspective ? <EyeOff size={14} /> : <Eye size={14} />}
-          <span>他者视角</span>
-        </button>
-      )}
     </div>
   );
 }

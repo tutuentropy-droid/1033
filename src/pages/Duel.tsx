@@ -117,14 +117,20 @@ export default function Duel() {
 
   const handleTimeUp = useCallback(() => {
     if (!philosopherIdTyped || hasAnswered) return;
-    setHasAnswered(true);
     
-    if (maieuticChain.isActive && currentFollowUpQuestion) {
-      answerFollowUpQuestion('', philosopherIdTyped);
+    if (selectedOption) {
+      handleConfirm();
     } else {
-      answerQuestion('', philosopherIdTyped);
+      setHasAnswered(true);
+      stopTimer();
+      
+      if (maieuticChain.isActive && currentFollowUpQuestion) {
+        answerFollowUpQuestion('', philosopherIdTyped);
+      } else {
+        answerQuestion('', philosopherIdTyped);
+      }
     }
-  }, [philosopherIdTyped, hasAnswered, answerQuestion, answerFollowUpQuestion, maieuticChain.isActive, currentFollowUpQuestion]);
+  }, [philosopherIdTyped, hasAnswered, selectedOption, handleConfirm, stopTimer, answerQuestion, answerFollowUpQuestion, maieuticChain.isActive, currentFollowUpQuestion]);
 
   const timerRef = useRef<number | null>(null);
 
