@@ -158,19 +158,34 @@ export default function FeedbackModal({
                     <div className={cn('font-display text-sm', getDiceToneStyle(feedback.diceState.tone).text)}>
                       永恒轮回骰子
                     </div>
-                    {feedback.diceState.isEternalRecurrence && (
+                    {feedback.diceState.result === 6 && (
                       <div className="text-xs text-yellow-700 font-bold animate-pulse">
                         ✨ 永恒轮回！无论对错都算正确，双倍分数！
                       </div>
                     )}
-                    {feedback.diceState.isHalfScore && (
-                      <div className="text-xs text-red-700 font-bold">
-                        💀 深渊凝视... 即使答对也只有一半分数
+                    {feedback.diceState.result === 5 && (
+                      <div className="text-xs text-green-700 font-bold">
+                        🍀 命运眷顾！吉星高照，正常得分，好运常伴
                       </div>
                     )}
-                    {!feedback.diceState.isEternalRecurrence && !feedback.diceState.isHalfScore && (
-                      <div className={cn('text-xs', getDiceToneStyle(feedback.diceState.tone).text + '/70')}>
-                        命运之骰已落下
+                    {feedback.diceState.result === 4 && (
+                      <div className="text-xs text-tavern-wood/80">
+                        ⚖️ 命运平顺！四平八稳，正常得分，全凭实力
+                      </div>
+                    )}
+                    {feedback.diceState.result === 3 && (
+                      <div className="text-xs text-tavern-wood/70">
+                        🎲 命运平常！不好不坏，正常得分，谨慎行事
+                      </div>
+                    )}
+                    {feedback.diceState.result === 2 && (
+                      <div className="text-xs text-orange-700 font-bold">
+                        ⚠️ 命运沉重！步履维艰，答错扣分加倍
+                      </div>
+                    )}
+                    {feedback.diceState.result === 1 && (
+                      <div className="text-xs text-red-700 font-bold">
+                        💀 深渊凝视... 即使答对也只有一半分数
                       </div>
                     )}
                   </div>

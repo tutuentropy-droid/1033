@@ -253,7 +253,21 @@ export const useGameStore = create<GameStore>()(
 
         const baseScore = 10;
         const scoreChange = Math.floor(isCorrect ? baseScore * scoreMultiplier : 0);
-        const affectionChange = isCorrect ? CORRECT_AFFECTION_GAIN : -WRONG_AFFECTION_LOSS;
+        
+        let affectionMultiplier = 1;
+        let extraAffectionBonus = 0;
+        
+        if (diceState) {
+          if (diceState.result === 2 && !isCorrect) {
+            affectionMultiplier = 2;
+          }
+          if (diceState.result === 5 && isCorrect) {
+            extraAffectionBonus = 3;
+          }
+        }
+        
+        const baseAffectionChange = isCorrect ? CORRECT_AFFECTION_GAIN : -WRONG_AFFECTION_LOSS;
+        const affectionChange = baseAffectionChange * affectionMultiplier + extraAffectionBonus;
 
         let message: string;
         if (diceState) {
