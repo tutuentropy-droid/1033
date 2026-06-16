@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, RotateCcw, Award, Sparkles } from 'lucide-react';
 import TavernBackground from '@/components/Tavern/TavernBackground';
@@ -10,9 +10,13 @@ import ParchmentCard from '@/components/shared/ParchmentCard';
 import SocratesDeathEasterEgg from '@/components/Duel/SocratesDeathEasterEgg';
 import BadgeUnlockModal from '@/components/Duel/BadgeUnlockModal';
 import EternalRecurrenceDice from '@/components/Duel/EternalRecurrenceDice';
+import GazeSilhouette from '@/components/Duel/GazeSilhouette';
+import GazeMeter from '@/components/Duel/GazeMeter';
+import QuestionTimer from '@/components/Duel/QuestionTimer';
 import { getPhilosopherById } from '@/data/philosophers';
 import { useGameStore } from '@/store/useGameStore';
 import { getQuestionsByPhilosopher } from '@/data/questions';
+import { BASE_QUESTION_TIME, FRENCH_MODE_TIME_PENALTY } from '@/types';
 import { cn } from '@/lib/utils';
 
 export default function Duel() {
@@ -33,6 +37,7 @@ export default function Duel() {
     newlyUnlockedBadge,
     dice,
     ubermenschWill,
+    gaze,
     setCurrentPhilosopher,
     loadNextQuestion,
     answerQuestion,
@@ -47,6 +52,11 @@ export default function Duel() {
     setCurrentFollowUpQuestion,
     proceedAfterFeedback,
     rerollDice,
+    showOtherPerspective,
+    hideOtherPerspective,
+    decrementTime,
+    stopTimer,
+    resetGaze,
   } = useGameStore();
 
   const philosopher = getPhilosopherById(philosopherId || '');
@@ -88,13 +98,67 @@ export default function Duel() {
   const handleConfirm = useCallback(() => {
     if (!selectedOption || hasAnswered || !philosopherIdTyped) return;
     setHasAnswered(true);
+    stopTimer();
     
     if (maieuticChain.isActive && currentFollowUpQuestion) {
       answerFollowUpQuestion(selectedOption, philosopherIdTyped);
     } else {
       answerQuestion(selectedOption, philosopherIdTyped);
     }
-  }, [selectedOption, hasAnswered, answerQuestion, answerFollowUpQuestion, philosopherIdTyped, maieuticChain.isActive, currentFollowUpQuestion]);
+  }, [selectedOption, hasAnswered, answerQuestion, answerFollowUpQuestion, philosopherIdTyped, maieuticChain.isActive, currentFollowUpQuestion, stopTimer]);
+
+  const handleShowOtherPerspective = useCallback((optionId: string) => {
+    if (gaze.showOtherPerspective === optionId) {
+      hideOtherPerspective();
+    } else {
+      showOtherPerspective(optionId);
+    }
+  }, [gaze.showOtherPerspective, showOtherPerspective, hideOtherPerspective]);
+
+  const handleTimeUp = useCallback(() => {
+    if (!philosopherIdTyped || hasAnswered) return;
+    setHasAnswered(true);
+    
+    if (maieuticChain.isActive && currentFollowUpQuestion) {
+      answerFollowUpQuestion('', philosopherIdTyped);
+    } else {
+      answerQuestion('', philosopherIdTyped);
+    }
+  }, [philosopherIdTyped, hasAnswered, answerQuestion, answerFollowUpQuestion, maieuticChain.isActive, currentFollowUpQuestion]);
+
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!gaze.isTimerRunning || hasAnswered) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    timerRef.current = window.setInterval(() => {
+      const hasTimeLeft = decrementTime();
+      if (!hasTimeLeft) {
+        handleTimeUp();
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      }
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [gaze.isTimerRunning, hasAnswered, decrementTime, handleTimeUp]);
 
   const handleNextQuestion = useCallback(() => {
     if (!philosopherIdTyped) return;
@@ -142,8 +206,11 @@ export default function Duel() {
     setSelectedOption(null);
     setHasAnswered(false);
     resetPhilosopherProgress(philosopherIdTyped);
+    if (philosopherIdTyped === 'beauvoir') {
+      resetGaze();
+    }
     loadNextQuestion(philosopherIdTyped);
-  }, [philosopherIdTyped, hideFeedback, resetPhilosopherProgress, loadNextQuestion]);
+  }, [philosopherIdTyped, hideFeedback, resetPhilosopherProgress, resetGaze, loadNextQuestion]);
 
   if (!philosopher) {
     return null;
@@ -348,9 +415,22 @@ export default function Duel() {
               />
             )}
 
+            {philosopherIdTyped === 'beauvoir' && !currentFollowUpQuestion && (
+              <div className="grid grid-cols-2 gap-4">
+                <GazeMeter gazeValue={gaze.gazeValue} />
+                <QuestionTimer
+                  timeLeft={gaze.timeLeft}
+                  totalTime={gaze.isFrenchMode ? BASE_QUESTION_TIME - FRENCH_MODE_TIME_PENALTY : BASE_QUESTION_TIME}
+                  isFrenchMode={gaze.isFrenchMode}
+                />
+              </div>
+            )}
+
             <div>
               <p className="text-parchment-100 font-serif text-center mb-4">
-                请选择 {philosopher.name} 最可能说的话：
+                {philosopherIdTyped === 'beauvoir' && gaze.isFrenchMode
+                  ? 'Choisissez la réponse de Simone de Beauvoir :'
+                  : `请选择 ${philosopher.name} 最可能说的话：`}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {activeQuestion?.options.map((option, index) => (
@@ -362,6 +442,10 @@ export default function Duel() {
                     selected={selectedOption === option.id}
                     showResult={hasAnswered}
                     index={index}
+                    isBeauvoirMode={philosopherIdTyped === 'beauvoir' && !currentFollowUpQuestion}
+                    showOtherPerspective={gaze.showOtherPerspective === option.id}
+                    onShowOtherPerspective={() => handleShowOtherPerspective(option.id)}
+                    isFrenchMode={gaze.isFrenchMode && !currentFollowUpQuestion}
                   />
                 ))}
               </div>
@@ -408,6 +492,13 @@ export default function Duel() {
             easterEgg={philosopher.easterEgg}
             onClose={() => setShowEasterEgg(false)}
             socratesAvatar={philosopher.avatar}
+          />
+        )}
+
+        {philosopherIdTyped === 'beauvoir' && currentQuestion && (
+          <GazeSilhouette
+            gazeValue={gaze.gazeValue}
+            isFrenchMode={gaze.isFrenchMode}
           />
         )}
       </div>

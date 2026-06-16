@@ -22,6 +22,7 @@ export interface Philosopher {
 export interface Option {
   id: string;
   text: string;
+  frenchText?: string;
   isCorrect: boolean;
   philosopherId: PhilosopherId;
 }
@@ -88,6 +89,14 @@ export interface DiceState {
   showResult: boolean;
 }
 
+export interface GazeState {
+  gazeValue: number;
+  showOtherPerspective: string | null;
+  isFrenchMode: boolean;
+  timeLeft: number;
+  isTimerRunning: boolean;
+}
+
 export interface GameState {
   currentPhilosopher: Philosopher | null;
   currentQuestion: Question | null;
@@ -104,6 +113,7 @@ export interface GameState {
   newlyUnlockedBadge: Badge | null;
   ubermenschWill: number;
   dice: DiceState;
+  gaze: GazeState;
 }
 
 export interface FeedbackState {
@@ -139,3 +149,10 @@ export const AFFECTION_LEVELS: Record<AffectionLevel, { min: number; max: number
 export const INITIAL_AFFECTION = 50;
 export const CORRECT_AFFECTION_GAIN = 10;
 export const WRONG_AFFECTION_LOSS = 5;
+
+export const GAZE_THRESHOLD = 70;
+export const GAZE_INCREASE_PER_USE = 25;
+export const GAZE_DECREASE_ON_CORRECT = 15;
+export const BASE_QUESTION_TIME = 30;
+export const FRENCH_MODE_TIME_PENALTY = 5;
+export const MAX_GAZE_VALUE = 100;

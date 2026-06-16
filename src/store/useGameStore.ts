@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { GameState, Philosopher, Question, PhilosopherId, FeedbackState, AffectionLevel, FollowUpQuestion, Badge, EasterEgg, DiceResult, DiceState } from '@/types';
-import { INITIAL_AFFECTION, CORRECT_AFFECTION_GAIN, WRONG_AFFECTION_LOSS, AFFECTION_LEVELS } from '@/types';
+import type { GameState, Philosopher, Question, PhilosopherId, FeedbackState, AffectionLevel, FollowUpQuestion, Badge, EasterEgg, DiceResult, DiceState, GazeState } from '@/types';
+import { INITIAL_AFFECTION, CORRECT_AFFECTION_GAIN, WRONG_AFFECTION_LOSS, AFFECTION_LEVELS, GAZE_THRESHOLD, GAZE_INCREASE_PER_USE, GAZE_DECREASE_ON_CORRECT, BASE_QUESTION_TIME, FRENCH_MODE_TIME_PENALTY, MAX_GAZE_VALUE } from '@/types';
 import { getPhilosopherById, getRandomTaunt, getRandomPraise, getDiceMessage, type DiceTone } from '@/data/philosophers';
 import { getRandomQuestion, shuffleArray, getQuestionsByPhilosopher } from '@/data/questions';
 
@@ -43,6 +43,15 @@ interface GameStore extends GameState {
   rerollDice: (philosopherId: PhilosopherId) => boolean;
   setDiceShowResult: (show: boolean) => void;
   addUbermenschWill: (amount: number) => void;
+  showOtherPerspective: (optionId: string) => void;
+  hideOtherPerspective: () => void;
+  increaseGaze: () => void;
+  decreaseGaze: () => void;
+  setTimeLeft: (time: number) => void;
+  decrementTime: () => boolean;
+  startTimer: () => void;
+  stopTimer: () => void;
+  resetGaze: () => void;
 }
 
 const getInitialAffection = (): Record<PhilosopherId, number> => ({
@@ -76,6 +85,14 @@ const getInitialDice = (): DiceState => ({
   showResult: false,
 });
 
+const getInitialGaze = (): GazeState => ({
+  gazeValue: 0,
+  showOtherPerspective: null,
+  isFrenchMode: false,
+  timeLeft: BASE_QUESTION_TIME,
+  isTimerRunning: false,
+});
+
 const getDiceTone = (result: DiceResult): DiceTone => {
   if (result === 6) return 'ecstasy';
   if (result === 5) return 'joy';
@@ -103,6 +120,7 @@ export const useGameStore = create<GameStore>()(
       feedback: getInitialFeedback(),
       ubermenschWill: 0,
       dice: getInitialDice(),
+      gaze: getInitialGaze(),
 
       setCurrentPhilosopher: (philosopher) => {
         set({ 
@@ -111,6 +129,7 @@ export const useGameStore = create<GameStore>()(
           maieuticChain: getInitialMaieuticChain(),
           currentFollowUpQuestion: null,
           dice: getInitialDice(),
+          gaze: philosopher?.id === 'beauvoir' ? getInitialGaze() : getInitialGaze(),
         });
       },
 
@@ -151,6 +170,13 @@ export const useGameStore = create<GameStore>()(
         const question = availableQuestions[randomIndex];
         const shuffledOptions = shuffleArray(question.options);
         
+        const isBeauvoir = philosopherId === 'beauvoir';
+        const currentGaze = state.gaze.gazeValue;
+        const isFrenchMode = isBeauvoir && currentGaze >= GAZE_THRESHOLD;
+        const baseTime = BASE_QUESTION_TIME;
+        const timePenalty = isFrenchMode ? FRENCH_MODE_TIME_PENALTY : 0;
+        const timeLeft = Math.max(10, baseTime - timePenalty);
+        
         set({
           currentQuestion: {
             ...question,
@@ -159,6 +185,13 @@ export const useGameStore = create<GameStore>()(
           currentFollowUpQuestion: null,
           maieuticChain: getInitialMaieuticChain(),
           dice: getInitialDice(),
+          gaze: {
+            ...state.gaze,
+            showOtherPerspective: null,
+            isFrenchMode,
+            timeLeft,
+            isTimerRunning: isBeauvoir,
+          },
         });
 
         if (philosopherId === 'nietzsche') {
@@ -172,17 +205,19 @@ export const useGameStore = create<GameStore>()(
 
       answerQuestion: (optionId, philosopherId) => {
         const state = get();
-        const { currentQuestion, dice } = state;
+        const { currentQuestion, dice, gaze } = state;
         
         if (!currentQuestion) return;
 
         const philosopher = getPhilosopherById(philosopherId);
         if (!philosopher) return;
 
+        const isTimeout = !optionId;
         const selectedOption = currentQuestion.options.find(o => o.id === optionId);
-        if (!selectedOption) return;
+        
+        if (!selectedOption && !isTimeout) return;
 
-        const isOriginallyCorrect = selectedOption.isCorrect;
+        const isOriginallyCorrect = isTimeout ? false : selectedOption!.isCorrect;
 
         let isCorrect = isOriginallyCorrect;
         let scoreMultiplier = 1;
@@ -270,7 +305,11 @@ export const useGameStore = create<GameStore>()(
         const affectionChange = baseAffectionChange * affectionMultiplier + extraAffectionBonus;
 
         let message: string;
-        if (diceState) {
+        if (isTimeout) {
+          message = philosopherId === 'beauvoir' 
+            ? '时间到了！他者的凝视让你迷失了方向...' 
+            : '时间到了！思考还不够快啊。';
+        } else if (diceState) {
           message = getDiceMessage(philosopher, diceState.tone);
           if (diceState.isEternalRecurrence) {
             message = '你接受了永恒轮回的挑战！' + message;
@@ -283,11 +322,29 @@ export const useGameStore = create<GameStore>()(
 
         if (isCorrect) {
           const ubermenschGain = philosopherId === 'nietzsche' ? 1 : 0;
+          const newGazeValue = philosopherId === 'beauvoir' 
+            ? Math.max(0, gaze.gazeValue - GAZE_DECREASE_ON_CORRECT)
+            : gaze.gazeValue;
+          
           set({
             answeredQuestions: [...state.answeredQuestions, currentQuestion.id],
             score: state.score + scoreChange,
             ubermenschWill: state.ubermenschWill + ubermenschGain,
+            gaze: {
+              ...gaze,
+              gazeValue: newGazeValue,
+              isTimerRunning: false,
+            },
           });
+        } else {
+          if (philosopherId === 'beauvoir') {
+            set({
+              gaze: {
+                ...gaze,
+                isTimerRunning: false,
+              },
+            });
+          }
         }
 
         get().updateAffection(philosopherId, affectionChange);
@@ -518,6 +575,7 @@ export const useGameStore = create<GameStore>()(
           feedback: getInitialFeedback(),
           ubermenschWill: 0,
           dice: getInitialDice(),
+          gaze: getInitialGaze(),
         });
         get().resetAffection();
       },
@@ -649,6 +707,103 @@ export const useGameStore = create<GameStore>()(
 
       addUbermenschWill: (amount) => {
         set(state => ({ ubermenschWill: state.ubermenschWill + amount }));
+      },
+
+      showOtherPerspective: (optionId) => {
+        const state = get();
+        if (state.currentPhilosopher?.id !== 'beauvoir') return;
+        if (state.gaze.showOtherPerspective === optionId) return;
+        
+        const newGazeValue = Math.min(MAX_GAZE_VALUE, state.gaze.gazeValue + GAZE_INCREASE_PER_USE);
+        
+        set({
+          gaze: {
+            ...state.gaze,
+            showOtherPerspective: optionId,
+            gazeValue: newGazeValue,
+          },
+        });
+      },
+
+      hideOtherPerspective: () => {
+        const state = get();
+        set({
+          gaze: {
+            ...state.gaze,
+            showOtherPerspective: null,
+          },
+        });
+      },
+
+      increaseGaze: () => {
+        const state = get();
+        set({
+          gaze: {
+            ...state.gaze,
+            gazeValue: Math.min(MAX_GAZE_VALUE, state.gaze.gazeValue + GAZE_INCREASE_PER_USE),
+          },
+        });
+      },
+
+      decreaseGaze: () => {
+        const state = get();
+        set({
+          gaze: {
+            ...state.gaze,
+            gazeValue: Math.max(0, state.gaze.gazeValue - GAZE_DECREASE_ON_CORRECT),
+          },
+        });
+      },
+
+      setTimeLeft: (time) => {
+        const state = get();
+        set({
+          gaze: {
+            ...state.gaze,
+            timeLeft: time,
+          },
+        });
+      },
+
+      decrementTime: () => {
+        const state = get();
+        if (!state.gaze.isTimerRunning || state.gaze.timeLeft <= 0) return false;
+        
+        const newTime = state.gaze.timeLeft - 1;
+        set({
+          gaze: {
+            ...state.gaze,
+            timeLeft: newTime,
+          },
+        });
+        
+        return newTime > 0;
+      },
+
+      startTimer: () => {
+        const state = get();
+        set({
+          gaze: {
+            ...state.gaze,
+            isTimerRunning: true,
+          },
+        });
+      },
+
+      stopTimer: () => {
+        const state = get();
+        set({
+          gaze: {
+            ...state.gaze,
+            isTimerRunning: false,
+          },
+        });
+      },
+
+      resetGaze: () => {
+        set({
+          gaze: getInitialGaze(),
+        });
       },
     }),
     {
